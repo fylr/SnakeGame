@@ -54,7 +54,7 @@ func Run() {
 			if st < 0 {
 				isPasue = true
 			}
-			time.Sleep(time.Duration(1000) * time.Millisecond)
+			time.Sleep(time.Duration(500) * time.Millisecond)
 		}
 	}
 }

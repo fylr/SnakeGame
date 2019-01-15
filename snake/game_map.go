@@ -2,13 +2,14 @@
  * @Author: fylr
  * @Date: 2019-01-13 00:15:51
  * @LastEditors: fylr
- * @LastEditTime: 2019-01-15 00:15:14
+ * @LastEditTime: 2019-01-15 23:13:36
  * @Description:
  */
 
 package snake
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -16,89 +17,119 @@ import (
 )
 
 type gameMap struct {
-	snake                 *snake
-	food                  point
-	up, right, down, left int
+	snake *snake
+	food  point
+	// up, right, down, left int
+	left, up, width, height int
+	title, helpInfo         string
+	score                   int
 }
 
-func newGameMap(s *snake, f point, u, r, d, l int) *gameMap {
+func newGameMap(snakeVal *snake, foodVal point, leftVal, upVal, widthVal, heightVal int) *gameMap {
 	return &gameMap{
-		snake: s,
-		food:  f,
-		up:    u,
-		right: r,
-		down:  d,
-		left:  l,
+		snake:    snakeVal,
+		food:     foodVal,
+		left:     leftVal,
+		up:       upVal,
+		width:    widthVal,
+		height:   heightVal,
+		title:    "Snake Game",
+		helpInfo: "↑ ↓ ← → or w s a d  control the direction，p pasue，r restart，q or esc quit the game",
+		score:    snakeVal.length,
 	}
-}
-
-func (g *gameMap) flush() int {
-	head := g.snake.head()
-	newhead := point{head.x + dirToStep[g.snake.direction].x, head.y + dirToStep[g.snake.direction].y}
-
-	var isGrowth = false
-	var st = 0
-
-	if newhead.x <= g.left || newhead.x >= g.right || newhead.y <= g.up || newhead.y >= g.down {
-		return -1
-	} else if newhead.x == g.food.x && newhead.y == g.food.y {
-		isGrowth = true
-		st = g.snake.move(isGrowth)
-		f := g.food
-		for !isVaild(g.snake.body, f) {
-			x := rand.Intn(g.right-g.left-2) + g.left + 1
-			y := rand.Intn(g.down-g.up-2) + g.up + 1
-			f = point{x, y}
-		}
-		g.food = f
-	} else {
-		st = g.snake.move(isGrowth)
-	}
-	return st
-}
-
-func (g *gameMap) draw() {
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-
-	for x := g.left; x <= g.right; x++ {
-		termbox.SetCell(x, g.up, 0x2500, termbox.ColorWhite, termbox.ColorBlack)
-		termbox.SetCell(x, g.down, 0x2500, termbox.ColorWhite, termbox.ColorBlack)
-	}
-	for y := g.up; y <= g.down; y++ {
-		termbox.SetCell(g.left, y, 0x2500, termbox.ColorWhite, termbox.ColorBlack)
-		termbox.SetCell(g.right, y, 0x2500, termbox.ColorWhite, termbox.ColorBlack)
-	}
-
-	g.flush()
-	for _, temp := range g.snake.body {
-		termbox.SetCell(temp.x, temp.y, 0x2500, termbox.ColorRed, termbox.ColorYellow)
-	}
-
-	termbox.SetCell(g.food.x, g.food.y, '?', termbox.ColorWhite, termbox.ColorBlue)
 }
 
 func initGameMap() *gameMap {
 	rand.Seed(time.Now().UnixNano())
 
-	var up, right, down, left int = 5, 85, 35, 5
-	var l = 2
-	x := rand.Intn(right-left-10) + left + 4
-	y := rand.Intn(down-up-10) + up + 4
+	var left, up, width, height int = 10, 5, 35, 35
+	var snakeLen = 2
+	x := rand.Intn(width-2*snakeLen) + snakeLen
+	y := rand.Intn(height-2*snakeLen) + snakeLen
 	dir := rand.Intn(4)
-	body := []point{
+	snakeBody := []point{
 		point{x - dirToStep[dir].x, y - dirToStep[dir].y},
 		point{x, y},
 	}
-	s := newSnake(body, dir, l)
+	snakeVal := newSnake(snakeBody, dir, snakeLen)
 
-	f := point{x, y}
-	for !isVaild(body, f) {
-		x = rand.Intn(right-left-2) + left + 1
-		y = rand.Intn(down-up-2) + up + 1
-		f = point{x, y}
+	foodVal := point{x, y}
+	for !isVaild(snakeBody, foodVal) {
+		x = rand.Intn(width-1) + 1
+		y = rand.Intn(height-1) + 1
+		foodVal = point{x, y}
 	}
 
-	return newGameMap(s, f, up, right, down, left)
+	return newGameMap(snakeVal, foodVal, left, up, width, height)
+}
+
+func (g *gameMap) flush() int {
+	snakeHead := g.snake.head()
+	nextHead := point{snakeHead.x + dirToStep[g.snake.direction].x, snakeHead.y + dirToStep[g.snake.direction].y}
+
+	var isGrowth = false
+	var resultVal = 0
+
+	if nextHead.x <= 0 || nextHead.x > g.width || nextHead.y <= 0 || nextHead.y > g.height {
+		return -1
+	} else if nextHead.x == g.food.x && nextHead.y == g.food.y {
+		isGrowth = true
+		g.score++
+		resultVal = g.snake.move(isGrowth)
+		foodVal := g.food
+		for !isVaild(g.snake.body, foodVal) {
+			x := rand.Intn(g.width-1) + 1
+			y := rand.Intn(g.height-1) + 1
+			foodVal = point{x, y}
+		}
+		g.food = foodVal
+	} else {
+		resultVal = g.snake.move(isGrowth)
+	}
+	return resultVal
+}
+
+func (g *gameMap) draw() {
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+
+	//设置边界
+	for x := 0; x <= g.width+1; x++ {
+		termbox.SetCell(g.left+2*x, g.up, ' ', termbox.ColorBlack, termbox.ColorWhite)
+		termbox.SetCell(g.left+2*x+1, g.up, ' ', termbox.ColorBlack, termbox.ColorWhite)
+
+		termbox.SetCell(g.left+2*x, g.up+g.height+1, ' ', termbox.ColorBlack, termbox.ColorWhite)
+		termbox.SetCell(g.left+2*x+1, g.up+g.height+1, ' ', termbox.ColorBlack, termbox.ColorWhite)
+	}
+	for y := 0; y <= g.height+1; y++ {
+		termbox.SetCell(g.left, g.up+y, ' ', termbox.ColorBlack, termbox.ColorWhite)
+		termbox.SetCell(g.left+1, g.up+y, ' ', termbox.ColorBlack, termbox.ColorWhite)
+
+		termbox.SetCell(g.left+2*(g.width+1), g.up+y, ' ', termbox.ColorBlack, termbox.ColorWhite)
+		termbox.SetCell(g.left+2*(g.width+1)+1, g.up+y, ' ', termbox.ColorBlack, termbox.ColorWhite)
+	}
+
+	//打印title，help ，score
+	drawMsg(g.left+g.width, 1, termbox.ColorRed, termbox.ColorBlack, g.title)
+	drawMsg(g.left, 2, termbox.ColorRed, termbox.ColorBlack, g.helpInfo)
+	drawMsg(g.left, g.up-2, termbox.ColorMagenta, termbox.ColorBlack, "score: %d", g.score-2)
+
+	g.flush()
+
+	for _, temp := range g.snake.body {
+		termbox.SetCell(g.left+2*temp.x, temp.y+g.up, ' ', termbox.ColorRed, termbox.ColorYellow)
+		termbox.SetCell(g.left+2*temp.x+1, temp.y+g.up, ' ', termbox.ColorRed, termbox.ColorYellow)
+	}
+
+	termbox.SetCell(g.left+2*g.food.x, g.food.y+g.up, '?', termbox.ColorWhite, termbox.ColorBlue)
+	termbox.SetCell(g.left+2*g.food.x+1, g.food.y+g.up, '?', termbox.ColorWhite, termbox.ColorBlue)
+}
+
+func drawMsg(x, y int, fg, bg termbox.Attribute, format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	for _, c := range msg {
+		termbox.SetCell(x, y, c, fg, bg)
+		x++
+	}
 }
 
 func isVaild(b []point, f point) bool {
