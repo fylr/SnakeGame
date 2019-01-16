@@ -2,7 +2,7 @@
  * @Author: fylr
  * @Date: 2019-01-13 00:15:51
  * @LastEditors: fylr
- * @LastEditTime: 2019-01-15 23:13:36
+ * @LastEditTime: 2019-01-17 01:12:05
  * @Description:
  */
 
@@ -21,7 +21,7 @@ type gameMap struct {
 	food  point
 	// up, right, down, left int
 	left, up, width, height int
-	title, helpInfo         string
+	title, helpInfo, status string
 	score                   int
 }
 
@@ -35,6 +35,7 @@ func newGameMap(snakeVal *snake, foodVal point, leftVal, upVal, widthVal, height
 		height:   heightVal,
 		title:    "Snake Game",
 		helpInfo: "↑ ↓ ← → or w s a d  control the direction，p pasue，r restart，q or esc quit the game",
+		status:   "run",
 		score:    snakeVal.length,
 	}
 }
@@ -42,7 +43,7 @@ func newGameMap(snakeVal *snake, foodVal point, leftVal, upVal, widthVal, height
 func initGameMap() *gameMap {
 	rand.Seed(time.Now().UnixNano())
 
-	var left, up, width, height int = 10, 5, 35, 35
+	var left, up, width, height int = 12, 6, 35, 35
 	var snakeLen = 2
 	x := rand.Intn(width-2*snakeLen) + snakeLen
 	y := rand.Intn(height-2*snakeLen) + snakeLen
@@ -71,7 +72,9 @@ func (g *gameMap) flush() int {
 	var resultVal = 0
 
 	if nextHead.x <= 0 || nextHead.x > g.width || nextHead.y <= 0 || nextHead.y > g.height {
-		return -1
+		resultVal = -1
+	} else if !isVaild(g.snake.body, nextHead) {
+		resultVal = -2
 	} else if nextHead.x == g.food.x && nextHead.y == g.food.y {
 		isGrowth = true
 		g.score++
@@ -85,6 +88,9 @@ func (g *gameMap) flush() int {
 		g.food = foodVal
 	} else {
 		resultVal = g.snake.move(isGrowth)
+	}
+	if resultVal != 0 {
+		g.status = g.snake.dieMsg(resultVal)
 	}
 	return resultVal
 }
@@ -108,18 +114,23 @@ func (g *gameMap) draw() {
 		termbox.SetCell(g.left+2*(g.width+1)+1, g.up+y, ' ', termbox.ColorBlack, termbox.ColorWhite)
 	}
 
-	//打印title，help ，score
+	//打印title, help, status, score
 	drawMsg(g.left+g.width, 1, termbox.ColorRed, termbox.ColorBlack, g.title)
 	drawMsg(g.left, 2, termbox.ColorRed, termbox.ColorBlack, g.helpInfo)
-	drawMsg(g.left, g.up-2, termbox.ColorMagenta, termbox.ColorBlack, "score: %d", g.score-2)
+	drawMsg(g.left, 3, termbox.ColorMagenta, termbox.ColorBlack, "status: %s", g.status)
+	drawMsg(g.left, 4, termbox.ColorMagenta, termbox.ColorBlack, "scores: %d", g.score-2)
 
-	g.flush()
+	// g.flush()
 
+	//绘制蛇
 	for _, temp := range g.snake.body {
-		termbox.SetCell(g.left+2*temp.x, temp.y+g.up, ' ', termbox.ColorRed, termbox.ColorYellow)
-		termbox.SetCell(g.left+2*temp.x+1, temp.y+g.up, ' ', termbox.ColorRed, termbox.ColorYellow)
+		termbox.SetCell(g.left+2*temp.x, temp.y+g.up, ' ', termbox.ColorBlack, termbox.ColorYellow)
+		termbox.SetCell(g.left+2*temp.x+1, temp.y+g.up, ' ', termbox.ColorBlack, termbox.ColorYellow)
 	}
+	termbox.SetCell(g.left+2*g.snake.head().x, g.snake.head().y+g.up, ' ', termbox.ColorBlack, termbox.ColorRed)
+	termbox.SetCell(g.left+2*g.snake.head().x+1, g.snake.head().y+g.up, ' ', termbox.ColorBlack, termbox.ColorRed)
 
+	//食物
 	termbox.SetCell(g.left+2*g.food.x, g.food.y+g.up, '?', termbox.ColorWhite, termbox.ColorBlue)
 	termbox.SetCell(g.left+2*g.food.x+1, g.food.y+g.up, '?', termbox.ColorWhite, termbox.ColorBlue)
 }

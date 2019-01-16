@@ -2,7 +2,7 @@
  * @Author: fylr
  * @Date: 2019-01-12 17:01:18
  * @LastEditors: fylr
- * @LastEditTime: 2019-01-15 23:07:59
+ * @LastEditTime: 2019-01-17 00:27:50
  * @Description:
  */
 
@@ -33,7 +33,9 @@ func (s *snake) head() point {
 }
 
 func (s *snake) changeDir(dir int) {
-	s.direction = dir
+	if dir != s.direction && (dir-s.direction)%2 != 0 {
+		s.direction = dir
+	}
 }
 
 func (s *snake) move(isGrowth bool) int {
@@ -54,11 +56,11 @@ func (s *snake) move(isGrowth bool) int {
 	return 0
 }
 
-func (s *snake) die(status int) string {
+func (s *snake) dieMsg(status int) string {
 	if status == -1 {
-		return "move out game map!"
+		return "die,move out game map!"
 	} else if status == -2 {
-		return "bump into body!"
+		return "die,eat the body!"
 	}
 	return ""
 }

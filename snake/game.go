@@ -22,8 +22,6 @@ func Run() {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 
 	gm := initGameMap()
-	gm.draw()
-	termbox.Flush()
 
 	var keyval = make(chan int)
 	go listenToKeyboard(keyval)
@@ -37,7 +35,14 @@ func Run() {
 			case 0, 1, 2, 3:
 				gm.snake.changeDir(val)
 			case 4:
-				isPasue = !isPasue
+				// isPasue = !isPasue
+				if isPasue {
+					isPasue = false
+					gm.status = "run"
+				} else {
+					isPasue = true
+					gm.status = "pasue"
+				}
 			case 5:
 				termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 				isPasue = false
@@ -49,12 +54,12 @@ func Run() {
 		}
 		if !isPasue {
 			st := gm.flush()
-			gm.draw()
-			termbox.Flush()
 			if st < 0 {
 				isPasue = true
 			}
-			time.Sleep(time.Duration(500) * time.Millisecond)
 		}
+		gm.draw()
+		termbox.Flush()
+		time.Sleep(time.Duration(500) * time.Millisecond)
 	}
 }
